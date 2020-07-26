@@ -24,12 +24,13 @@ Download [the latest release](https://github.com/5exyGuy/altV-vCode/releases/tag
 
 | Key |           Action           |
 | --- | :------------------------: |
+| F4  | Renames the current file |
 | F4  | Toggles the in-game editor |
-| ESC | Closes the in-game editor  |
 | F5  | Creates a new server file |
 | F6 | Creates a new client file  |
 | F7  | Executes the current file |
 | Del | Deletes the current file  |
+| ESC | Closes the in-game editor  |
 
 ## Preview
 
