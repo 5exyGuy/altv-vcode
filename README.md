@@ -9,7 +9,7 @@ A server/client-sided editor made for alt:V MP and powered by the [Monaco Editor
 
 ## Installation
 
-Download the latest release ant put it in resources folder.
+Download [the latest release](https://github.com/5exyGuy/altV-vCode/releases/tag/v1.0) ant put it in resources folder.
 
 ## Usage
 
