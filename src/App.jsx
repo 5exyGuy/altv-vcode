@@ -24,7 +24,7 @@ import {
 	Breadcrumbs,
 	Link,
 } from '@material-ui/core';
-import { Storage, Clear, Computer, Build, Add } from '@material-ui/icons';
+import { Storage, Clear, Computer, Build, Add, Forward } from '@material-ui/icons';
 import { Server } from './types/Server';
 import { Client } from './types/Client';
 import { Natives } from './types/Natives';
@@ -55,10 +55,28 @@ class App extends Component {
 
 	componentDidMount() {
 		alt.emit('vCode::ready');
-
 		alt.on('vCode::open', () => {
 			this.showEditor();
 			alt.emit('vCode::open', this.isVisible);
+		});
+		alt.on('vCode::createFile', (type) => {
+			if (!this.isVisible) return;
+			this.createNewFile(type);
+		});
+		alt.on('vCode::executeFile', () => {
+			if (!this.currentFileName) return;
+			if (!this.isVisible) return;
+			this.executeFile(this.currentFileName);
+		});
+		alt.on('vCode::deleteFile', () => {
+			if (!this.currentFileName) return;
+			if (!this.isVisible) return;
+			this.deleteFile(this.currentFileName);
+		});
+		alt.on('vCode::renameFile', () => {
+			if (!this.currentFileName) return;
+			if (!this.isVisible) return;
+			this.renameFile(this.currentFileName);
 		});
 	}
 
@@ -294,14 +312,24 @@ class App extends Component {
 														startIcon={<Add />}
 														onClick={() => this.createNewFile('server')}
 													>
-														Server
+														Server <strong style={{ marginLeft: 8 }}>F5</strong>
 													</Button>
 													<Button
 														startIcon={<Add />}
 														onClick={() => this.createNewFile('client')}
 													>
-														Client
+														Client <strong style={{ marginLeft: 8 }}>F6</strong>
 													</Button>
+													{this.currentFileName !== null ? (
+														<Button
+															startIcon={<Forward />}
+															onClick={() => this.executeFile(this.currentFileName)}
+														>
+															Execute <strong style={{ marginLeft: 8 }}>F7</strong>
+														</Button>
+													) : (
+														''
+													)}
 													<div style={{ flexGrow: 1 }} />
 													<IconButton
 														variant='square'
@@ -344,7 +372,18 @@ class App extends Component {
 																	</Avatar>
 																</ListItemAvatar>
 																<ListItemText
-																	primary={file.name}
+																	primary={
+																		<div
+																			style={{
+																				color:
+																					this.currentFileName === file.name
+																						? '#3d6594'
+																						: '#4e753e',
+																			}}
+																		>
+																			{file.name}
+																		</div>
+																	}
 																	secondary={
 																		<Breadcrumbs
 																			style={{ fontSize: 10 }}
