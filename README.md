@@ -16,7 +16,7 @@ To enable ESM module, you need to have `package.json` file and to create it plea
 
 ## Installation
 
-Download [the latest release](https://github.com/5exyGuy/altV-vCode/releases/tag/v1.2) ant put it in the resources folder.
+Download [the latest release](https://github.com/5exyGuy/altv-vcode/releases/tag/1.2) ant put it in the resources folder.
 
 ## Usage
 
