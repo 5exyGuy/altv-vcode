@@ -12,7 +12,7 @@ A server/client-sided editor made for alt:V MP and powered by the [Monaco Editor
 -   [NodeJS](https://nodejs.org/en/download/current/)
 -   [Enable ESM](https://nodejs.org/api/esm.html)
 
-To enable ESM module, you need to have `package.json` file and to create it please follow [Creating a package.json file](https://docs.npmjs.com/creating-a-package-json-file);
+To enable ESM module, you need to have `package.json` file and to create it please follow [Creating a package.json file](https://docs.npmjs.com/creating-a-package-json-file).
 
 ## Installation
 
@@ -58,7 +58,7 @@ export default config;
 
 ![](preview.png)
 
-### Known issues
+## Known issues
 
 -   It may take some time to load webview, because after player connection typings are sent to webview from the server.
 -   The monaco editor is not visible after the first opening. To fix it, it is necessary everytime to resize the window.

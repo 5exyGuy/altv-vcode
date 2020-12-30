@@ -24,10 +24,11 @@ import {
 	Breadcrumbs,
 	Link,
 } from '@material-ui/core';
-import { Storage, Clear, Computer, Build, Add, Forward } from '@material-ui/icons';
+import { Storage, Clear, Computer, Build, Add, Forward, Delete, TextRotationNone } from '@material-ui/icons';
 import { setServerTypes, getServerTypes } from './types/server';
 import { setClientTypes, getClientTypes } from './types/client';
 import { setNativeTypes, getNativeTypes } from './types/natives';
+import keyCodes from './keycodes';
 
 const darkTheme = createMuiTheme({
 	palette: {
@@ -48,10 +49,16 @@ class App extends Component {
 	@observable executionMessage = 'Waiting for file to be executed...';
 
 	@observable isRenamingFile = false;
-	@observable isVisible = false;
+	@observable isVisible = true;
 
 	pressedEnter = false;
 	currentCode = '';
+
+	@observable CREATE_NEW_SERVER_FILE = 116;	// Default: F5
+    @observable CREATE_NEW_CLIENT_FILE = 117;  	// Default: F6
+	@observable EXECUTE_CURRENT_FILE = 118;    	// Default: F7
+	@observable RENAME_CURRENT_FILE = 113;     	// Default: F2
+    @observable DELETE_CURRENT_FILE = 46;     	// Default: Delete
 
 	componentDidMount() {
 		if ('alt' in window) {
@@ -61,10 +68,18 @@ class App extends Component {
 
 			alt.on('vCode::config', (config, serverTypes, clientTypes, nativeTypes) => {
 				if (!config) return;
+
 				this.width = config.DEFAULT_WIDTH;
 				this.height = config.DEFAULT_HEIGHT;
+
 				this.x = config.DEFAULT_POSITION_X;
 				this.y = config.DEFAULT_POSITION_Y;
+
+				this.CREATE_NEW_SERVER_FILE = config.CREATE_NEW_SERVER_FILE;
+				this.CREATE_NEW_CLIENT_FILE = config.CREATE_NEW_CLIENT_FILE;
+				this.EXECUTE_CURRENT_FILE = config.EXECUTE_CURRENT_FILE;
+				this.RENAME_CURRENT_FILE = config.RENAME_CURRENT_FILE;
+				this.DELETE_CURRENT_FILE = config.DELETE_CURRENT_FILE;
 
 				setServerTypes(serverTypes);
 				setClientTypes(clientTypes);
@@ -335,21 +350,35 @@ class App extends Component {
 															startIcon={<Add />}
 															onClick={() => this.createNewFile('server')}
 														>
-															Server <strong style={{ marginLeft: 8 }}>F5</strong>
+															Server <strong style={{ marginLeft: 8 }}>{keyCodes[this.CREATE_NEW_SERVER_FILE] ? keyCodes[this.CREATE_NEW_SERVER_FILE].toUpperCase() : ''}</strong>
 														</Button>
 														<Button
 															startIcon={<Add />}
 															onClick={() => this.createNewFile('client')}
 														>
-															Client <strong style={{ marginLeft: 8 }}>F6</strong>
+															Client <strong style={{ marginLeft: 8 }}>{keyCodes[this.CREATE_NEW_CLIENT_FILE] ? keyCodes[this.CREATE_NEW_CLIENT_FILE].toUpperCase() : ''}</strong>
 														</Button>
 														{this.currentFileName !== null ? (
-															<Button
-																startIcon={<Forward />}
-																onClick={() => this.executeFile(this.currentFileName)}
-															>
-																Execute <strong style={{ marginLeft: 8 }}>F7</strong>
-															</Button>
+															<>
+																<Button
+																	startIcon={<Forward />}
+																	onClick={() => this.executeFile(this.currentFileName)}
+																>
+																	Execute <strong style={{ marginLeft: 8 }}>{keyCodes[this.EXECUTE_CURRENT_FILE] ? keyCodes[this.EXECUTE_CURRENT_FILE].toUpperCase() : ''}</strong>
+																</Button>
+																<Button
+																	startIcon={<TextRotationNone />}
+																	onClick={() => this.renameFile(this.currentFileName)}
+																>
+																	Rename <strong style={{ marginLeft: 8 }}>{keyCodes[this.RENAME_CURRENT_FILE] ? keyCodes[this.RENAME_CURRENT_FILE].toUpperCase() : ''}</strong>
+																</Button>
+																<Button
+																	startIcon={<Delete />}
+																	onClick={() => this.deleteFile(this.currentFileName)}
+																>
+																	Delete <strong style={{ marginLeft: 8 }}>{keyCodes[this.DELETE_CURRENT_FILE] ? keyCodes[this.DELETE_CURRENT_FILE].toUpperCase() : ''}</strong>
+																</Button>
+															</>
 														) : (
 															<></>
 														)}
