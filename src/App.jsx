@@ -25,9 +25,9 @@ import {
 	Link,
 } from '@material-ui/core';
 import { Storage, Clear, Computer, Build, Add, Forward } from '@material-ui/icons';
-import { Server } from './types/Server';
-import { Client } from './types/Client';
-import { Natives } from './types/Natives';
+import { setServerTypes, getServerTypes } from './types/server';
+import { setClientTypes, getClientTypes } from './types/client';
+import { setNativeTypes, getNativeTypes } from './types/natives';
 
 const darkTheme = createMuiTheme({
 	palette: {
@@ -48,36 +48,57 @@ class App extends Component {
 	@observable executionMessage = 'Waiting for file to be executed...';
 
 	@observable isRenamingFile = false;
-	@observable isVisible = true;
+	@observable isVisible = false;
 
 	pressedEnter = false;
 	currentCode = '';
 
 	componentDidMount() {
-		alt.emit('vCode::ready');
-		alt.on('vCode::open', () => {
-			this.showEditor();
-			alt.emit('vCode::open', this.isVisible);
-		});
-		alt.on('vCode::createFile', (type) => {
-			if (!this.isVisible) return;
-			this.createNewFile(type);
-		});
-		alt.on('vCode::executeFile', () => {
-			if (!this.currentFileName) return;
-			if (!this.isVisible) return;
-			this.executeFile(this.currentFileName);
-		});
-		alt.on('vCode::deleteFile', () => {
-			if (!this.currentFileName) return;
-			if (!this.isVisible) return;
-			this.deleteFile(this.currentFileName);
-		});
-		alt.on('vCode::renameFile', () => {
-			if (!this.currentFileName) return;
-			if (!this.isVisible) return;
-			this.renameFile(this.currentFileName);
-		});
+		if ('alt' in window) {
+			setTimeout(() => {
+				alt.emit('vCode::ready');
+			}, 1000);
+
+			alt.on('vCode::config', (config, serverTypes, clientTypes, nativeTypes) => {
+				if (!config) return;
+				this.width = config.DEFAULT_WIDTH;
+				this.height = config.DEFAULT_HEIGHT;
+				this.x = config.DEFAULT_POSITION_X;
+				this.y = config.DEFAULT_POSITION_Y;
+
+				setServerTypes(serverTypes);
+				setClientTypes(clientTypes);
+				setNativeTypes(nativeTypes);
+			});
+
+			alt.on('vCode::toggle', () => {
+				this.showEditor();
+				alt.emit('vCode::toggle', this.isVisible);
+			});
+
+			alt.on('vCode::createFile', (type) => {
+				if (!this.isVisible) return;
+				this.createNewFile(type);
+			});
+
+			alt.on('vCode::executeFile', () => {
+				if (!this.currentFileName) return;
+				if (!this.isVisible) return;
+				this.executeFile(this.currentFileName);
+			});
+
+			alt.on('vCode::deleteFile', () => {
+				if (!this.currentFileName) return;
+				if (!this.isVisible) return;
+				this.deleteFile(this.currentFileName);
+			});
+
+			alt.on('vCode::renameFile', () => {
+				if (!this.currentFileName) return;
+				if (!this.isVisible) return;
+				this.renameFile(this.currentFileName);
+			});
+		}
 	}
 
 	@action
@@ -150,12 +171,11 @@ class App extends Component {
 		this.currentCode = code;
 
 		type === 'server'
-			? this.monaco.languages.typescript.javascriptDefaults.setExtraLibs([{ content: Server }])
+			? this.monaco.languages.typescript.javascriptDefaults.setExtraLibs([{ content: getServerTypes() }])
 			: this.monaco.languages.typescript.javascriptDefaults.setExtraLibs([
-					{ content: Client },
-					{ content: Natives },
+					{ content: getClientTypes() },
+					{ content: getNativeTypes() },
 			  ]);
-
 		this.editor.getModel().setValue(code);
 	}
 
@@ -204,6 +224,7 @@ class App extends Component {
 		if (this.isRenamingFile) {
 			if (event.target.value.length > 0) {
 				const index = this.files.findIndex((file) => file.renaming === true);
+				if (this.files[index].name === this.currentFileName) this.currentFileName = event.target.value;
 				this.files[index].name = event.target.value;
 				this.files[index].renaming = false;
 
@@ -232,20 +253,22 @@ class App extends Component {
 			this.files[0].code = `// ${this.files[0].name}`;
 			this.files[0].new = false;
 
-			this.saveCurrentFile();
+			// this.saveCurrentFile();
 
-			this.currentFileName = this.files[0].name;
-			this.currentCode = this.files[0].code;
+			// this.currentFileName = this.files[0].name;
+			// this.currentCode = this.files[0].code;
 
-			this.files[0].type === 'server'
-				? this.monaco.languages.typescript.javascriptDefaults.setExtraLibs([{ content: Server }])
-				: this.monaco.languages.typescript.javascriptDefaults.setExtraLibs([
-						{ content: Client },
-						{ content: Natives },
-				  ]);
+			this.editFile(this.files[0].name)
 
-			this.editor.getModel().setValue(this.currentCode);
-			this.editor.focus();
+			// this.files[0].type === 'server'
+			// 	? this.monaco.languages.typescript.javascriptDefaults.setExtraLibs([{ content: getServerTypes() }])
+			// 	: this.monaco.languages.typescript.javascriptDefaults.setExtraLibs([
+			// 			{ content: getClientTypes() },
+			// 			{ content: getNativeTypes() },
+			// 	  ]);
+
+			// this.editor.getModel().setValue(this.currentCode);
+			// this.editor.focus();
 
 			return;
 		}
@@ -282,183 +305,188 @@ class App extends Component {
 
 	render() {
 		return (
-			<ThemeProvider theme={darkTheme}>
-				<div style={{ width: '100vw', height: '100vh', padding: 50 }}>
-					<div style={{ width: '100%', height: '100%' }}>
-						<Rnd
-							size={{ width: this.width, height: this.height }}
-							position={{ x: this.x, y: this.y }}
-							minWidth='800'
-							minHeight='400'
-							onResize={this.onResize.bind(this)}
-							onDragStop={this.onDragStop.bind(this)}
-							cancel='.no-drag'
-							bounds='parent'
-						>
-							<Card
-								style={{
-									width: this.width,
-									height: this.height,
-									backgroundColor: 'rgba(34,34,34,.95)',
-									display: this.isVisible ? 'block' : 'none',
-								}}
+			<div style={{ display: this.isVisible ? 'block' : 'none' }}>
+				<ThemeProvider theme={darkTheme}>
+					<div style={{ width: '100vw', height: '100vh', padding: 50 }}>
+						<div style={{ width: '100%', height: '100%' }}>
+							<Rnd
+								size={{ width: this.width, height: this.height }}
+								position={{ x: this.x, y: this.y }}
+								minWidth='800'
+								minHeight='400'
+								onResize={this.onResize.bind(this)}
+								onDragStop={this.onDragStop.bind(this)}
+								cancel='.no-drag'
+								bounds='parent'
 							>
-								<CardContent>
-									<Grid container spacing={1}>
-										<Grid item xs={12}>
-											<AppBar position='static' style={{ backgroundColor: '#4e753e' }}>
-												<Toolbar>
-													<Button
-														startIcon={<Add />}
-														onClick={() => this.createNewFile('server')}
-													>
-														Server <strong style={{ marginLeft: 8 }}>F5</strong>
-													</Button>
-													<Button
-														startIcon={<Add />}
-														onClick={() => this.createNewFile('client')}
-													>
-														Client <strong style={{ marginLeft: 8 }}>F6</strong>
-													</Button>
-													{this.currentFileName !== null ? (
+								<Card
+									style={{
+										width: this.width,
+										height: this.height,
+										backgroundColor: 'rgba(34,34,34,.95)'
+									}}
+								>
+									<CardContent>
+										<Grid container spacing={1}>
+											<Grid item xs={12}>
+												<AppBar position='static' style={{ backgroundColor: '#4e753e' }}>
+													<Toolbar>
 														<Button
-															startIcon={<Forward />}
-															onClick={() => this.executeFile(this.currentFileName)}
+															startIcon={<Add />}
+															onClick={() => this.createNewFile('server')}
 														>
-															Execute <strong style={{ marginLeft: 8 }}>F7</strong>
+															Server <strong style={{ marginLeft: 8 }}>F5</strong>
 														</Button>
-													) : (
-														''
-													)}
-													<div style={{ flexGrow: 1 }} />
-													<IconButton
-														variant='square'
-														onClick={() => alt.emit('vCode::open', false)}
-													>
-														<Clear />
-													</IconButton>
-												</Toolbar>
-											</AppBar>
-										</Grid>
-										<Grid item xs={3} className='no-drag'>
-											<List style={{ overflowY: 'scroll', height: this.height - 125 }} item>
-												{this.files.map((file) => {
-													return file.new === false && file.renaming === false ? (
-														<div
-															key={file.name}
-															onContextMenu={(e) => this.openFileContextMenu(e)}
-															onDoubleClick={(e) => this.editFile(file.name)}
-															style={{
-																cursor: 'context-menu',
-																userSelect: 'none',
+														<Button
+															startIcon={<Add />}
+															onClick={() => this.createNewFile('client')}
+														>
+															Client <strong style={{ marginLeft: 8 }}>F6</strong>
+														</Button>
+														{this.currentFileName !== null ? (
+															<Button
+																startIcon={<Forward />}
+																onClick={() => this.executeFile(this.currentFileName)}
+															>
+																Execute <strong style={{ marginLeft: 8 }}>F7</strong>
+															</Button>
+														) : (
+															<></>
+														)}
+														<div style={{ flexGrow: 1 }} />
+														<IconButton
+															variant='square'
+															onClick={() => {
+																this.showEditor();
+																alt.emit('vCode::toggle', this.isVisible);
 															}}
 														>
-															<ListItem>
-																<ListItemAvatar>
-																	<Avatar
-																		variant='square'
-																		style={{
-																			backgroundColor:
-																				file.name === this.currentFileName
-																					? '#3d6594'
-																					: '#4e753e',
-																		}}
-																	>
-																		{file.type === 'server' ? (
-																			<Storage />
-																		) : (
-																			<Computer />
-																		)}
-																	</Avatar>
-																</ListItemAvatar>
-																<ListItemText
-																	primary={
-																		<div
+															<Clear />
+														</IconButton>
+													</Toolbar>
+												</AppBar>
+											</Grid>
+											<Grid item xs={3} className='no-drag'>
+												<List style={{ overflowY: 'scroll', height: this.height - 125 }} item>
+													{this.files.map((file) => {
+														return file.new === false && file.renaming === false ? (
+															<div
+																key={file.name}
+																onContextMenu={(e) => this.openFileContextMenu(e)}
+																onDoubleClick={(e) => this.editFile(file.name)}
+																style={{
+																	cursor: 'context-menu',
+																	userSelect: 'none',
+																}}
+															>
+																<ListItem>
+																	<ListItemAvatar>
+																		<Avatar
+																			variant='square'
 																			style={{
-																				color:
-																					this.currentFileName === file.name
+																				backgroundColor:
+																					file.name === this.currentFileName
 																						? '#3d6594'
 																						: '#4e753e',
 																			}}
 																		>
-																			{file.name}
-																		</div>
-																	}
-																	secondary={
-																		<Breadcrumbs
-																			style={{ fontSize: 10 }}
-																			aria-label='breadcrumb'
+																			{file.type === 'server' ? (
+																				<Storage />
+																			) : (
+																				<Computer />
+																			)}
+																		</Avatar>
+																	</ListItemAvatar>
+																	<ListItemText
+																		primary={
+																			<div
+																				style={{
+																					color:
+																						this.currentFileName === file.name
+																							? '#3d6594'
+																							: '#4e753e',
+																				}}
+																			>
+																				{file.name}
+																			</div>
+																		}
+																		secondary={
+																			<Breadcrumbs
+																				style={{ fontSize: 10 }}
+																				aria-label='breadcrumb'
+																			>
+																				<Link
+																					color='inherit'
+																					onClick={() =>
+																						this.renameFile(file.name)
+																					}
+																				>
+																					Rename
+																				</Link>
+																				<Link
+																					color='inherit'
+																					onClick={() =>
+																						this.deleteFile(file.name)
+																					}
+																				>
+																					Delete
+																				</Link>
+																			</Breadcrumbs>
+																		}
+																	/>
+																	<ListItemSecondaryAction>
+																		<IconButton
+																			edge='end'
+																			onClick={() => this.executeFile(file.name)}
 																		>
-																			<Link
-																				color='inherit'
-																				onClick={() =>
-																					this.renameFile(file.name)
-																				}
-																			>
-																				Rename
-																			</Link>
-																			<Link
-																				color='inherit'
-																				onClick={() =>
-																					this.deleteFile(file.name)
-																				}
-																			>
-																				Delete
-																			</Link>
-																		</Breadcrumbs>
-																	}
-																/>
-																<ListItemSecondaryAction>
-																	<IconButton
-																		edge='end'
-																		onClick={() => this.executeFile(file.name)}
+																			<Build />
+																		</IconButton>
+																	</ListItemSecondaryAction>
+																</ListItem>
+															</div>
+														) : (
+															<ListItem key={file.name}>
+																<ListItemAvatar>
+																	<Avatar
+																		variant={this.isRenamingFile ? 'square' : 'rounded'}
+																		style={{ backgroundColor: '#4e753e' }}
 																	>
 																		<Build />
-																	</IconButton>
-																</ListItemSecondaryAction>
+																	</Avatar>
+																</ListItemAvatar>
+																<Input
+																	onKeyPress={(e) => this.onKeyPress(e)}
+																	onBlur={(e) => this.onInputBlur(e)}
+																	autoFocus={true}
+																/>
 															</ListItem>
-														</div>
-													) : (
-														<ListItem key={file.name}>
-															<ListItemAvatar>
-																<Avatar
-																	variant={this.isRenamingFile ? 'square' : 'rounded'}
-																	style={{ backgroundColor: '#4e753e' }}
-																>
-																	<Build />
-																</Avatar>
-															</ListItemAvatar>
-															<Input
-																onKeyPress={(e) => this.onKeyPress(e)}
-																onBlur={(e) => this.onInputBlur(e)}
-																autoFocus={true}
-															/>
-														</ListItem>
-													);
-												})}
-											</List>
+														);
+													})}
+												</List>
+											</Grid>
+											<Grid item xs={9} className='no-drag'>
+												<MonacoEditor
+													ref='monaco'
+													height={this.height - 125}
+													editorDidMount={this.editorDidMount.bind(this)}
+													language='javascript'
+													theme='vs-dark'
+													options={{ automaticLayout: true }}
+													onChange={(newValue) => (this.currentCode = newValue)}
+													value={this.currentFileName ? this.currentCode : '/* Could not find any current opened file */'}
+												/>
+											</Grid>
+											<Paper style={{ padding: '3px 10px', width: '100%' }} elevation={0}>
+												{this.executionMessage}
+											</Paper>
 										</Grid>
-										<Grid item xs={9} className='no-drag'>
-											<MonacoEditor
-												ref='monaco'
-												height={this.height - 125}
-												editorDidMount={this.editorDidMount.bind(this)}
-												language='javascript'
-												theme='vs-dark'
-												options={{ automaticLayout: true }}
-												onChange={(newValue) => (this.currentCode = newValue)}
-											/>
-										</Grid>
-										<Paper style={{ padding: '3px 10px', width: '100%' }} elevation={0}>
-											{this.executionMessage}
-										</Paper>
-									</Grid>
-								</CardContent>
-							</Card>
-						</Rnd>
+									</CardContent>
+								</Card>
+							</Rnd>
+						</div>
 					</div>
-				</div>
-			</ThemeProvider>
+				</ThemeProvider>
+			</div>
 		);
 	}
 }

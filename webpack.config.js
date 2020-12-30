@@ -7,7 +7,7 @@ const MONACO_DIR = path.resolve(__dirname, './node_modules/monaco-editor');
 
 module.exports = {
 	entry: {
-		main: './src/App.jsx',
+		main: './src/app.jsx',
 	},
 	module: {
 		rules: [
@@ -61,6 +61,7 @@ module.exports = {
 		new MonacoWebpackPlugin({
 			// available options are documented at https://github.com/Microsoft/monaco-editor-webpack-plugin#options
 			languages: ['javascript', 'typescript', 'json'],
+			features: ['!gotoSymbol'],
 		}),
 	],
 };
