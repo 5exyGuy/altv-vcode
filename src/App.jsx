@@ -49,10 +49,10 @@ class App extends Component {
 	@observable executionMessage = 'Waiting for file to be executed...';
 
 	@observable isRenamingFile = false;
-	@observable isVisible = true;
+	@observable isVisible = false;
 
-	pressedEnter = false;
-	currentCode = '';
+	@observable pressedEnter = false;
+	@observable currentCode = '';
 
 	@observable CREATE_NEW_SERVER_FILE = 116;	// Default: F5
     @observable CREATE_NEW_CLIENT_FILE = 117;  	// Default: F6
@@ -62,18 +62,18 @@ class App extends Component {
 
 	componentDidMount() {
 		if ('alt' in window) {
-			setTimeout(() => {
-				alt.emit('vCode::ready');
-			}, 1000);
-
 			alt.on('vCode::config', (config, serverTypes, clientTypes, nativeTypes) => {
 				if (!config) return;
 
-				this.width = config.DEFAULT_WIDTH;
-				this.height = config.DEFAULT_HEIGHT;
+				if (typeof config?.DEFAULT_WIDTH === 'number')
+					this.width = config.DEFAULT_WIDTH;
+				if (typeof config?.DEFAULT_HEIGHT === 'number')
+					this.height = config.DEFAULT_HEIGHT;
 
-				this.x = config.DEFAULT_POSITION_X;
-				this.y = config.DEFAULT_POSITION_Y;
+				if (typeof config?.DEFAULT_POSITION_X === 'number')
+					this.x = config.DEFAULT_POSITION_X;
+				if (typeof config?.DEFAULT_POSITION_Y === 'number')
+					this.y = config.DEFAULT_POSITION_Y;
 
 				this.CREATE_NEW_SERVER_FILE = config.CREATE_NEW_SERVER_FILE;
 				this.CREATE_NEW_CLIENT_FILE = config.CREATE_NEW_CLIENT_FILE;
@@ -98,7 +98,6 @@ class App extends Component {
 
 			alt.on('vCode::executeFile', () => {
 				if (!this.currentFileName) return;
-				if (!this.isVisible) return;
 				this.executeFile(this.currentFileName);
 			});
 
@@ -113,6 +112,10 @@ class App extends Component {
 				if (!this.isVisible) return;
 				this.renameFile(this.currentFileName);
 			});
+
+			setTimeout(() => {
+				alt.emit('vCode::ready');
+			}, 1000);
 		}
 	}
 
@@ -396,13 +399,13 @@ class App extends Component {
 												</AppBar>
 											</Grid>
 											<Grid item xs={3} className='no-drag'>
-												<List style={{ overflowY: 'scroll', height: this.height - 125 }} item>
+												<List style={{ overflowY: 'scroll', height: this.height - 125 }}>
 													{this.files.map((file) => {
 														return file.new === false && file.renaming === false ? (
 															<div
 																key={file.name}
 																onContextMenu={(e) => this.openFileContextMenu(e)}
-																onDoubleClick={(e) => this.editFile(file.name)}
+																onDoubleClick={() => this.editFile(file.name)}
 																style={{
 																	cursor: 'context-menu',
 																	userSelect: 'none',
@@ -428,14 +431,7 @@ class App extends Component {
 																	</ListItemAvatar>
 																	<ListItemText
 																		primary={
-																			<div
-																				style={{
-																					color:
-																						this.currentFileName === file.name
-																							? '#3d6594'
-																							: '#4e753e',
-																				}}
-																			>
+																			<div style={{ color: this.currentFileName === file.name ? '#3d6594' : '#4e753e' }}>
 																				{file.name}
 																			</div>
 																		}
@@ -446,17 +442,13 @@ class App extends Component {
 																			>
 																				<Link
 																					color='inherit'
-																					onClick={() =>
-																						this.renameFile(file.name)
-																					}
+																					onClick={() => this.renameFile(file.name)}
 																				>
 																					Rename
 																				</Link>
 																				<Link
 																					color='inherit'
-																					onClick={() =>
-																						this.deleteFile(file.name)
-																					}
+																					onClick={() =>this.deleteFile(file.name)}
 																				>
 																					Delete
 																				</Link>
