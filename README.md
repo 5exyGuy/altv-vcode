@@ -27,6 +27,7 @@ Download [the latest release](https://github.com/5exyGuy/altv-vcode/releases/tag
 | Drag      |                  Drags the opened window                   |
 | Resize    |                 Resizes the opened window                  |
 | Shortcuts | Gives ability to manage files with specified key shortcuts |
+| Saving    |                All created files are saved                 |
 
 ### Config
 
@@ -48,6 +49,7 @@ const config = {
     CREATE_NEW_CLIENT_FILE: 117, // Default: F6
     EXECUTE_CURRENT_FILE: 118, // Default: F7
     DELETE_CURRENT_FILE: 46, // Default: Delete
+    SAVE_CURRENT_FILE: 120, // Default: F9
     CLOSE_EDITOR: 27, // Default: Esc
 };
 
