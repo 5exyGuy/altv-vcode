@@ -62,5 +62,5 @@ export default config;
 
 ## Known issues
 
--   It may take some time to load webview, because after player connection typings are sent to webview from the server.
+-   ~~It may take some time to load webview, because after player connection typings are sent to webview from the server.~~
 -   ~~The monaco editor is not visible after the first opening. To fix it, it is necessary everytime to resize the window.~~
